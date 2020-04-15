@@ -20,23 +20,41 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PORTD 0x40020C00
+#define RCC_BASE 0x40023800
+
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-#define AHB1 (0x40023800U + 0x30U)
-#define GPIOD (0x40020C00U)
-
 void delay(void) {
-	for(volatile uint32_t i = 0; i < 500000; i++);
+	for (volatile uint32_t i = 0; i < 500000; i++);
 }
 
-int main(void) {
-	*((volatile uint32_t *) AHB1) |= (1 << 3);
+int main(void)
+{
+	//define PORTD_Base
+    //volatile uint32_t *PORTD = (volatile uint32_t*) 0x40020C00;
+
+	//activate clock for PortD
+	*((volatile uint32_t*) (0x40023800 + 0x30)) |= (1 << 3);
+
+	//set PortD's (0x40020C00) I/O Direction (off.val. 0x00) to Output 0b10 = 2 on PIN 13
+	*((volatile uint32_t*) (PORTD)) |= ((1 << 30));
+	*((volatile uint32_t*) (PORTD)) |= ((1 << 28));
+	*((volatile uint32_t*) (PORTD)) |= ((1 << 26));
+	*((volatile uint32_t*) (PORTD)) |= ((1 << 24));
+	//*((volatile uint32_t*) (PORTD)) |= (PORTD ~(1 << 27) | (1 << 26)); <- legit code?
+
+	//set PortD's (0x40020C00) I/O Clockspeed (off.val. 0x08) to 2 very high on PIN 13 - erstmal nicht nötig für dieses Praktikum
+	//*((volatile uint32_t*) (PORTD + 0x08)) |= ((1 << 27) | (1 << 26));
+
 	for(;;) {
-		*((volatile uint32_t *) GPIOD + 0x14U) |= (1 << 15);
-		delay();
-		*((volatile uint32_t *) GPIOD + 0x14U) &= ~(1 << 15);
+		//toggle PORTD's 13th pin/ User LED
+		*((volatile uint32_t*) (PORTD + 0x14)) ^= (1 << 15);
+		*((volatile uint32_t*) (PORTD + 0x14)) ^= (1 << 14);
+		*((volatile uint32_t*) (PORTD + 0x14)) ^= (1 << 13);
+		*((volatile uint32_t*) (PORTD + 0x14)) ^= (1 << 12);
 		delay();
 	}
 }
