@@ -24,17 +24,18 @@
 #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-#define AHB1PERIPH_BASEADDR 0x40020000U
-#define GPIOD_BASEADDR (AHB1PERIPH_BASEADDR + 0x0C00U)
+#define RCC_BASEADDR 0x40023800U
+#define AHB1PERIPH_BASEADDR 0x40020000U /* Bus baseaddress */
+#define AHB1_CLOCK_BASEADDR (RCC_BASEADDR + 0x30U)
+#define GPIOD_BASEADDR (AHB1PERIPH_BASEADDR + 0xC00) //(AHB1PERIPH_BASEADDR + 0x0C00U)
 
-typedef
-struct {
-    volatile uint32_t MODE_REG = 0x00U;          /* Address offset: 0x00 */
-    volatile uint32_t TYPE_REG = 0x04U;          /* Address offset: 0x04 */
-    volatile uint32_t SPEED_REG = 0x08U;         /* Address offset: 0x08 */
-    volatile uint32_t PULL_REG = 0x0CU;          /* Address offset: 0x0C */
-    volatile uint32_t INPUT_DATA_REG = 0x10U;    /* Address offset: 0x10 */
-    volatile uint32_t OUTPUT_DATA_REG = 0x14U;   /* Address offset: 0x14 */
+typedef struct {
+    volatile uint32_t MODE_REG;          /* Address offset: 0x00 */
+    volatile uint32_t TYPE_REG;          /* Address offset: 0x04 */
+    volatile uint32_t SPEED_REG;         /* Address offset: 0x08 */
+    volatile uint32_t PULL_REG;          /* Address offset: 0x0C */
+    volatile uint32_t INPUT_DATA_REG;    /* Address offset: 0x10 */
+    volatile uint32_t OUTPUT_DATA_REG;   /* Address offset: 0x14 */
 } GPIO_RegDef;
 
 void delay(void) {
@@ -43,21 +44,22 @@ void delay(void) {
 
 int main(void)
 {
+	volatile GPIO_RegDef *GPIOD = (GPIO_RegDef*) (GPIOD_BASEADDR);
     //activate clock for PortD
-    *((volatile uint32_t*) (AHB1PERIPH_BASEADDR + 0x30U)) |= (1 << 3);
+    *((volatile uint32_t*) AHB1_CLOCK_BASEADDR) |= (1 << 3);
 
     //set PortD's I/O Direction (off.val. 0x00) to Output on Pin 12-15
-    *((volatile uint32_t*) (GPIOD_BASEADDR)) |= ((1 << 30));
-    *((volatile uint32_t*) (GPIOD_BASEADDR)) |= ((1 << 28));
-    *((volatile uint32_t*) (GPIOD_BASEADDR)) |= ((1 << 26));
-    *((volatile uint32_t*) (GPIOD_BASEADDR)) |= ((1 << 24));
+    GPIOD->MODE_REG |= ((1 << 30));
+    GPIOD->MODE_REG |= ((1 << 28));
+    GPIOD->MODE_REG |= ((1 << 26));
+    GPIOD->MODE_REG |= ((1 << 24));
 
     for(;;) {
         //toggle PORTD's 13th pin/ User LED
-        *((volatile uint32_t*) (GPIOD_BASEADDR + GPIO_RegDef.OUTPUT_DATA_REG)) ^= (1 << 15);
-        *((volatile uint32_t*) (GPIOD_BASEADDR + GPIO_RegDef.OUTPUT_DATA_REG)) ^= (1 << 14);
-        *((volatile uint32_t*) (GPIOD_BASEADDR + GPIO_RegDef.OUTPUT_DATA_REG)) ^= (1 << 13);
-        *((volatile uint32_t*) (GPIOD_BASEADDR + GPIO_RegDef.OUTPUT_DATA_REG)) ^= (1 << 12);
+        GPIOD->OUTPUT_DATA_REG ^= (1 << 15);
+        GPIOD->OUTPUT_DATA_REG ^= (1 << 14);
+        GPIOD->OUTPUT_DATA_REG ^= (1 << 13);
+        GPIOD->OUTPUT_DATA_REG ^= (1 << 12);
         delay();
     }
 }
